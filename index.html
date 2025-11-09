@@ -6,389 +6,332 @@
     <title>Sentence Structure Scramble</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom styles for the game */
+    <!-- Use Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+        <style type="text/tailwindcss">
+        /* Use Inter as the default font */
         body {
             font-family: 'Inter', sans-serif;
-            /* Wood texture background, similar to the image */
-            background-color: #f7f3e8;
-            background-image: url('https://www.transparenttextures.com/patterns/wood-grain.png');
         }
-
-        /* Style for the draggable word cards */
-        .word-card {
-            /* Light green background as in the image */
-            background-color: #c4f5c4;
-            border: 2px solid #5a8c5a;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-            transition: all 0.2s ease-in-out;
-            cursor: grab;
+        /* Custom styles for the word buttons */
+        .word-btn {
+            @apply px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer shadow-md transition-all duration-200 ease-in-out;
+            @apply hover:bg-blue-500 hover:shadow-lg transform hover:-translate-y-0.5;
+            @apply active:scale-95 active:bg-blue-700;
         }
-
-        .word-card:active {
-            cursor: grabbing;
-            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
-            transform: scale(1.05);
-        }
-        
-        /* Add slight random rotation to cards in the scramble box */
-        .scramble-box .word-card:nth-child(5n+1) { transform: rotate(-1.5deg); }
-        .scramble-box .word-card:nth-child(5n+2) { transform: rotate(1deg); }
-        .scramble-box .word-card:nth-child(5n+3) { transform: rotate(2deg); }
-        .scramble-box .word-card:nth-child(5n+4) { transform: rotate(-1deg); }
-
-        /* Style for the drop zones */
+        /* Custom style for the drop zones */
         .drop-zone {
-            border: 3px dashed #a0a0a0;
-            background-color: rgba(255, 255, 255, 0.5);
-            min-height: 80px;
-        }
-        
-        /* Highlight drop zone on drag over */
-        .drag-over {
-            background-color: rgba(196, 245, 196, 0.7);
-            border-color: #5a8c5a;
-        }
-
-        /* Modal styles */
-        .modal {
-            display: none; /* Hidden by default */
-        }
-        .modal.flex {
-            display: flex; /* Show when active */
+            @apply min-h-[8rem] w-full rounded-lg p-3 flex flex-wrap justify-center items-center transition-all gap-2;
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-900 text-gray-200">
 
-    <div class="bg-white/80 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-2xl">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Sentence Structure Scramble</h1>
-
-        <!-- Scramble Box: Where the words start -->
-        <div class="mb-4">
-            <h2 class="text-lg font-semibold text-gray-700 mb-2">Scrambled Words:</h2>
-            <div id="scramble-box" class="drop-zone p-4 rounded-lg flex flex-wrap gap-3 items-center justify-center">
-                <!-- Word cards will be generated here -->
-                <p class="text-gray-500">Click "Get New Sentence" to start!</p>
+    <!-- API Key Settings Button -->
+    <button id="settingsBtn" class="fixed top-4 right-4 text-gray-400 hover:text-white transition-colors z-20 p-2 rounded-full hover:bg-gray-700">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-.1.011.011.021.021.032.032.22.22.316.446.402.668.087.223.14.455.195.69.055.234.102.474.15.721.048.246.088.502.119.766.03.264.048.534.055.811.007.277.007.556 0 .834s-.007.556-.007.834c-.007.277-.025.547-.055.811a6.656 6.656 0 01-.119.766c-.047.246-.094.486-.15.721-.055.234-.108.466-.195.69-.086.222-.182.447-.402.668a1.192 1.192 0 01-.032.032c-.55.907-.02.448 1.11.1.09-.542.56-1.007 1.11-.1.011.011.021.021.032.032.22.22.316.446.402.668.087.223.14.455.195.69.055.234.102.474.15.721.048.246.088.502.119.766.03.264.048.534.055.811.007.277.007.556 0 .834s-.007.556-.007.834c-.007.277-.025.547-.055.811a6.656 6.656 0 01-.119.766c-.047.246-.094.486-.15.721-.055.234-.108.466-.195.69-.086.222-.182.447-.402.668a1.192 1.192 0 01-.032.032c-.55.907-.02.448 1.11.1.09-.542.56-1.007 1.11-.1.011.011.021.021.032.032.22.22.316.446.402.668.087.223.14.455.195.69.055.234.102.474.15.721.048.246.088.502.119.766.03.264.048.534.055.811.007.277.007.556 0 .834s-.007.556-.007.834c-.007.277-.025.547-.055.811a6.656 6.656 0 01-.119.766c-.047.246-.094.486-.15.721-.055.234-.108.466-.195.69-.086.222-.182.447-.402.668a1.192 1.192 0 01-.032.032c-.55.907-.02.448 1.11.1.09-.542.56-1.007 1.11-.1.011.011.021.021.032.032.22.22.316.446.402.668.087.223.14.455.195.69.055.234.102.474.15.721.048.246.088.502.119.766.03.264.048.534.055.811.007.277.007.556 0 .834s-.007.556-.007.834c-.007.277-.025.547-.055.811a6.656 6.656 0 01-.119.766c-.047.246-.094.486-.15.721-.055.234-.108.466-.195.69-.086.222-.182.447-.402.668a1.192 1.192 0 01-.032.032c-.55.907-.02.448 1.11.1zM12 6.75a5.25 5.25 0 110 10.5 5.25 5.25 0 010-10.5z" />
+        </svg>
+    </button>
+    
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
+        <div class="bg-white text-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Settings</h2>
+                <button id="closeModalBtn" class="text-gray-500 hover:text-gray-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-        </div>
-
-        <!-- Answer Box: Where the words are dropped -->
-        <div class="mb-6">
-            <h2 class="text-lg font-semibold text-gray-700 mb-2">Your Sentence:</h2>
-            <div id="answer-box" class="drop-zone p-4 rounded-lg flex flex-wrap gap-3 items-center">
-                <!-- Dropped words will appear here -->
+            <p class="text-gray-600 mb-4">Please enter your MiniMax API Key to play.</p>
+            <div>
+                <label for="apiKeyInput" class="block text-sm font-medium text-gray-700 mb-1">MiniMax API Key</label>
+                <input type="password" id="apiKeyInput" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Your API key">
             </div>
-        </div>
-
-        <!-- Controls -->
-        <div class="flex flex-col sm:flex-row gap-3">
-            <button id="get-sentence-btn" class="flex-1 bg-blue-600 text-white font-semibold py-3 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-300">
-                Get New Sentence
-            </button>
-            <button id="check-answer-btn" class="flex-1 bg-green-600 text-white font-semibold py-3 px-5 rounded-lg shadow-md hover:bg-green-700 transition duration-300">
-                Check Answer
-            </button>
-        </div>
-
-        <!-- Message Area -->
-        <div id="message-area" class="mt-4 text-center text-lg font-medium"></div>
-
-        <!-- API Key Button -->
-        <div class="text-center mt-6">
-            <button id="api-key-btn" class="text-xs text-gray-500 hover:text-gray-700 underline">
-                Set AI API Key
-            </button>
+            <button id="saveApiBtn" class="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 transition-colors">Save Key</button>
         </div>
     </div>
 
-    <!-- API Key Modal -->
-    <div id="api-key-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
-            <h2 class="text-xl font-bold mb-4">Set Your AI API Key</h2>
-            <p class="text-gray-600 mb-4">Please provide your API key for the MiniMax model to generate sentences.</p>
-            <input type="password" id="api-key-input" class="w-full p-2 border border-gray-300 rounded-lg mb-4" placeholder="Enter your MiniMax API key here...">
-            <div class="flex justify-end gap-3">
-                <button id="cancel-key-btn" class="bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-400 transition">
-                    Cancel
-                </button>
-                <button id="save-key-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
-                    Save Key
+    <!-- Main Game Content -->
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-3xl bg-gray-800 rounded-2xl shadow-xl p-6 md:p-10 border border-gray-700">
+            
+            <h1 class="text-3xl md:text-4xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-8">
+                Sentence Structure Scramble
+            </h1>
+
+            <!-- Get Sentence Button -->
+            <div class="flex justify-center mb-6">
+                <button id="getSentenceBtn" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 hover:bg-blue-500 active:scale-95">
+                    Get New Sentence
                 </button>
             </div>
+
+            <!-- Loader -->
+            <div id="loader" class="flex justify-center items-center h-20 mb-4 hidden">
+                <div class="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <!-- Game Area -->
+            <div id="gameArea" class="hidden">
+                <p class="text-center text-gray-400 mb-4">Click the words to build the sentence in the correct order!</p>
+                
+                <!-- 1. Answer Box (Target) -->
+                <div id="target-box" class="drop-zone bg-gray-700 border-2 border-dashed border-gray-500">
+                    <!-- Words will be moved here -->
+                </div>
+
+                <!-- 2. Scrambled Words Box (Source) -->
+                <div class="mt-6">
+                    <h3 class="text-center text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Word Bank</h3>
+                    <div id="source-box" class="drop-zone bg-gray-800 border border-gray-700">
+                        <!-- Scrambled words will appear here -->
+                    </div>
+                </div>
+
+                <!-- 3. Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                    <button id="checkBtn" class="flex-1 bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 hover:bg-green-500 active:scale-95">
+                        Check Answer
+                    </button>
+                    <button id="resetBtn" class="flex-1 bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 hover:bg-gray-500 active:scale-95">
+                        Reset
+                    </button>
+                </div>
+
+                <!-- 4. Feedback Message -->
+                <div id="feedbackMsg" class="mt-6 text-center text-lg font-medium h-6"></div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        // --- STATE ---
-        let correctSentence = ""; // e.g., "The cat sat on the mat"
-        let apiKey = "";
-        let draggedElement = null;
+        // --- DOM Elements ---
+        const settingsBtn = document.getElementById('settingsBtn');
+        const apiKeyModal = document.getElementById('apiKeyModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveApiBtn = document.getElementById('saveApiBtn');
+        const apiKeyInput = document.getElementById('apiKeyInput');
 
-        // --- DOM ELEMENTS ---
-        const scrambleBox = document.getElementById('scramble-box');
-        const answerBox = document.getElementById('answer-box');
-        const getSentenceBtn = document.getElementById('get-sentence-btn');
-        const checkAnswerBtn = document.getElementById('check-answer-btn');
-        const messageArea = document.getElementById('message-area');
+        const getSentenceBtn = document.getElementById('getSentenceBtn');
+        const loader = document.getElementById('loader');
+        const gameArea = document.getElementById('gameArea');
+        const targetBox = document.getElementById('target-box');
+        const sourceBox = document.getElementById('source-box');
+        const checkBtn = document.getElementById('checkBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const feedbackMsg = document.getElementById('feedbackMsg');
+
+        // --- State ---
+        let apiKey = null;
+        let originalSentence = "";
+        let initialScrambledWords = []; // To store the original scrambled order for reset
+        const API_URL = "https://api.minimax.io/v1/chat/completions";
+
+        // --- Utility Functions ---
         
-        const apiKeyBtn = document.getElementById('api-key-btn');
-        const apiKeyModal = document.getElementById('api-key-modal');
-        const apiKeyInput = document.getElementById('api-key-input');
-        const saveKeyBtn = document.getElementById('save-key-btn');
-        const cancelKeyBtn = document.getElementById('cancel-key-btn');
-
-        // --- API KEY MODAL LOGIC ---
-        
-        // Load API key from localStorage on startup
-        function loadApiKey() {
-            // Updated to use 'minimax-api-key'
-            const storedKey = localStorage.getItem('minimax-api-key');
-            if (storedKey) {
-                apiKey = storedKey;
-                apiKeyInput.value = storedKey;
-            } else {
-                // If no key, show the modal
-                apiKeyModal.classList.add('flex');
-            }
-        }
-        
-        apiKeyBtn.addEventListener('click', () => {
-            apiKeyModal.classList.add('flex');
-        });
-
-        cancelKeyBtn.addEventListener('click', () => {
-            apiKeyModal.classList.remove('flex');
-        });
-
-        saveKeyBtn.addEventListener('click', () => {
-            apiKey = apiKeyInput.value;
-            if (apiKey) {
-                // Updated to use 'minimax-api-key'
-                localStorage.setItem('minimax-api-key', apiKey);
-                apiKeyModal.classList.remove('flex');
-                showMessage('API Key saved successfully!', 'green');
-            } else {
-                showMessage('Please enter a valid API key.', 'red');
-            }
-        });
-
-        // --- MINIMAX API CALL ---
-        async function generateSentence() {
-            if (!apiKey) {
-                showMessage('Please set your MiniMax API key first.', 'red');
-                apiKeyModal.classList.add('flex');
-                return;
-            }
-
-            showMessage('Generating new sentence... 🧠', 'blue');
-            getSentenceBtn.disabled = true;
-
-            const systemPrompt = "You are an assistant that provides simple sentences for a game. You MUST respond with ONLY the sentence and nothing else. Do not add quotes, labels, explanations, or any other text. Just the sentence.";
-            const userQuery = "Generate only one simple, grammatically correct English sentence with a clear SVO (Subject-Verb-Object) structure. The sentence should be between 5 and 8 words long. End it with a period.";
-            
-            // Updated for MiniMax API
-            const apiUrl = `https://api.minimax.io/v1/chat/completions`;
-
-            const payload = {
-                model: "MiniMax-M2",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userQuery }
-                ],
-                extra_body: { reasoning_split: true } // We DO need the reasoning part split out
-            };
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}` // Use Bearer token for MiniMax
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                // Updated to parse the MiniMax response structure
-                let text = result.choices?.[0]?.message?.content;
-
-                if (text) {
-                    // NEW FIX: Manually remove the <think>...</think> block
-                    const thinkTagEnd = text.lastIndexOf('</think>');
-                    if (thinkTagEnd !== -1) {
-                        // If the tag exists, take the text after it
-                        text = text.substring(thinkTagEnd + '</think>'.length);
-                    }
-
-                    // Clean the sentence: remove period and trim whitespace
-                    correctSentence = text.trim().replace(/\.$/, '');
-
-                    // Add a check to ensure we have a valid sentence
-                    if (correctSentence.length < 5 || correctSentence.includes('<')) {
-                         throw new Error('Failed to parse a clean sentence from API response.');
-                    }
-                    
-                    setupGame(correctSentence);
-                } else {
-                    throw new Error('Invalid response from API.');
-                }
-
-            } catch (error) {
-                console.error(error);
-                showMessage('Failed to generate sentence. Check your API key or console.', 'red');
-                // Handle common API key error
-                if (error.message.includes('API Error')) {
-                     showMessage('Error: Please check your MiniMax API key and ensure it is correct.', 'red');
-                }
-            } finally {
-                getSentenceBtn.disabled = false;
-            }
-        }
-
-        // --- GAME LOGIC (No changes needed here) ---
-
-        function setupGame(sentence) {
-            const words = sentence.split(' ');
-            const scrambledWords = shuffleArray([...words]);
-
-            scrambleBox.innerHTML = '';
-            answerBox.innerHTML = '';
-            messageArea.innerHTML = '';
-
-            scrambledWords.forEach(word => {
-                scrambleBox.appendChild(createWordCard(word));
-            });
-        }
-
-        function createWordCard(word) {
-            const card = document.createElement('div');
-            card.className = 'word-card p-3 rounded-lg text-xl font-medium select-none';
-            card.textContent = word;
-            card.draggable = true;
-            
-            // Add drag event listeners
-            card.addEventListener('dragstart', handleDragStart);
-            card.addEventListener('dragend', handleDragEnd);
-            
-            return card;
-        }
-
-        // Fisher-Yates Shuffle Algorithm
+        /**
+         * Shuffles an array in place using Fisher-Yates algorithm.
+         * @param {Array} array The array to shuffle.
+         * @returns {Array} The shuffled array.
+         */
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
             }
-            // Ensure it's not the correct order
-            if (array.join(' ') === correctSentence) {
-                return shuffleArray(array); // Reshuffle
-            }
             return array;
         }
 
-        function checkAnswer() {
-            const wordsInAnswerBox = Array.from(answerBox.children).map(card => card.textContent);
-            const userAnswer = wordsInAnswerBox.join(' ');
+        /**
+         * Cleans a sentence, removing punctuation and extra spaces.
+         * @param {string} sentence The input sentence.
+         * @returns {string} The cleaned sentence.
+         */
+        function cleanSentence(sentence) {
+            // Remove common punctuation from the end of the sentence
+            return sentence.trim().replace(/[.,!?"']$/g, '');
+        }
 
-            if (userAnswer === correctSentence) {
-                showMessage('🎉 Correct! Well done! 🎉', 'green');
-            } else {
-                showMessage('Almost! Try rearranging the words again.', 'red');
+        // --- Modal Logic ---
+
+        function showModal() {
+            apiKeyModal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            apiKeyModal.classList.add('hidden');
+        }
+
+        settingsBtn.addEventListener('click', showModal);
+        closeModalBtn.addEventListener('click', hideModal);
+
+        saveApiBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                apiKey = key;
+                localStorage.setItem('minimax_api_key', key);
+                hideModal();
+                feedbackMsg.textContent = "API Key saved!";
+                feedbackMsg.className = "mt-6 text-center text-lg font-medium h-6 text-green-400";
+                setTimeout(() => { feedbackMsg.textContent = "" }, 2000);
             }
-        }
-
-        function showMessage(text, color) {
-            messageArea.textContent = text;
-            messageArea.className = `mt-4 text-center text-lg font-medium text-${color}-600`;
-        }
-
-
-        // --- DRAG & DROP HANDLERS (No changes needed here) ---
-        
-        function handleDragStart(e) {
-            draggedElement = e.target;
-            // Add a slight delay to allow the browser to render the drag image
-            setTimeout(() => {
-                e.target.style.opacity = '0.5';
-            }, 0);
-        }
-
-        function handleDragEnd(e) {
-            e.target.style.opacity = '1';
-            draggedElement = null;
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault(); // Necessary to allow dropping
-            const dropZone = e.currentTarget;
-            dropZone.classList.add('drag-over');
-        }
-
-        function handleDragLeave(e) {
-            const dropZone = e.currentTarget;
-            dropZone.classList.remove('drag-over');
-        }
-        
-        function handleDrop(e) {
-            e.preventDefault();
-            const dropZone = e.currentTarget;
-            dropZone.classList.remove('drag-over');
-
-            if (draggedElement && dropZone !== draggedElement.parentNode) {
-                // This handles moving between scrambleBox and answerBox
-                // Find the correct position to insert
-                const afterElement = getDragAfterElement(dropZone, e.clientX);
-                if (afterElement == null) {
-                    dropZone.appendChild(draggedElement);
-                } else {
-                    dropZone.insertBefore(draggedElement, afterElement);
-                }
-            } else if (draggedElement) {
-                // This logic handles reordering within the same box
-                const afterElement = getDragAfterElement(dropZone, e.clientX);
-                if (afterElement == null) {
-                    dropZone.appendChild(draggedElement);
-                } else {
-                    dropZone.insertBefore(draggedElement, afterElement);
-                }
-            }
-        }
-        
-        // Helper function to find where to insert the dragged element for reordering
-        // Updated to use clientX for horizontal layout
-        function getDragAfterElement(container, x) {
-            const draggableElements = [...container.querySelectorAll('.word-card:not(.dragging)')];
-
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = x - box.left - box.width / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-
-        // --- EVENT LISTENERS ---
-        getSentenceBtn.addEventListener('click', generateSentence);
-        checkAnswerBtn.addEventListener('click', checkAnswer);
-        
-        // Add drag-over listeners to both boxes
-        [scrambleBox, answerBox].forEach(box => {
-            box.addEventListener('dragover', handleDragOver);
-            box.addEventListener('dragleave', handleDragLeave);
-            box.addEventListener('drop', handleDrop);
         });
 
-        // --- INITIALIZATION ---
-        loadApiKey();
+        // Load API key from local storage on startup
+        function loadApiKey() {
+            const savedKey = localStorage.getItem('minimax_api_key');
+            if (savedKey) {
+                apiKey = savedKey;
+                apiKeyInput.value = savedKey;
+            } else {
+                // If no key, show the modal immediately
+                showModal();
+            }
+        }
+
+        // --- Game Logic ---
+
+        getSentenceBtn.addEventListener('click', fetchSentence);
+
+        async function fetchSentence() {
+            if (!apiKey) {
+                feedbackMsg.textContent = "Please set your API key first.";
+                feedbackMsg.className = "mt-6 text-center text-lg font-medium h-6 text-red-400";
+                showModal();
+                return;
+            }
+
+            // Reset UI
+            loader.classList.remove('hidden');
+            gameArea.classList.add('hidden');
+            feedbackMsg.textContent = "";
+
+            const systemPrompt = "You are a helpful assistant. Your task is to generate one simple, complete English sentence suitable for a language learning game. The sentence should be 8 words or less. Do not add any conversational text, explanations, or quotation marks. Just provide the raw sentence.";
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        "model": "MiniMax-M2",
+                        "messages": [
+                            { "role": "system", "content": systemPrompt },
+                            { "role": "user", "content": "Generate a sentence." }
+                        ],
+                        "reasoning_split": true // As requested
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.choices && data.choices.length > 0) {
+                    const sentence = data.choices[0].message.content;
+                    processNewSentence(sentence);
+                } else {
+                    throw new Error("Invalid response structure from API.");
+                }
+
+            } catch (error) {
+                console.error("Error fetching sentence:", error);
+                feedbackMsg.textContent = `Error: ${error.message}`;
+                feedbackMsg.className = "mt-6 text-center text-lg font-medium h-6 text-red-400";
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Sets up the game board with a new sentence.
+         * @param {string} sentence The sentence from the API.
+         */
+        function processNewSentence(sentence) {
+            originalSentence = cleanSentence(sentence);
+            const words = originalSentence.split(' ');
+            
+            // Ensure the sentence isn't identical after shuffling
+            let scrambled;
+            do {
+                scrambled = shuffleArray([...words]);
+            } while (scrambled.join(' ') === originalSentence && words.length > 1);
+            
+            initialScrambledWords = scrambled; // Save for reset
+            
+            renderWords(initialScrambledWords, sourceBox);
+            targetBox.innerHTML = ""; // Clear target box
+            gameArea.classList.remove('hidden');
+        }
+
+        /**
+         * Renders a list of words as buttons into a container.
+         * @param {string[]} words - The array of words to render.
+         * @param {HTMLElement} container - The container to append buttons to.
+         */
+        function renderWords(words, container) {
+            container.innerHTML = ""; // Clear the container
+            words.forEach(word => {
+                const wordBtn = document.createElement('button');
+                wordBtn.textContent = word;
+                wordBtn.className = 'word-btn';
+                wordBtn.addEventListener('click', moveWord);
+                container.appendChild(wordBtn);
+            });
+        }
+
+        /**
+         * Click handler to move a word between the source and target boxes.
+         * @param {Event} event The click event.
+         */
+        function moveWord(event) {
+            const wordBtn = event.target;
+            const parent = wordBtn.parentElement;
+
+            if (parent.id === 'source-box') {
+                targetBox.appendChild(wordBtn);
+            } else {
+                sourceBox.appendChild(wordBtn);
+            }
+            feedbackMsg.textContent = ""; // Clear feedback on move
+        }
+
+        // --- Action Button Listeners ---
+
+        resetBtn.addEventListener('click', () => {
+            // Re-render the original scrambled words
+            renderWords(initialScrambledWords, sourceBox);
+            targetBox.innerHTML = ""; // Clear target box
+            feedbackMsg.textContent = "";
+        });
+
+        checkBtn.addEventListener('click', () => {
+            const children = Array.from(targetBox.children);
+            const userAnswer = children.map(btn => btn.textContent).join(' ');
+
+            if (userAnswer === originalSentence) {
+                feedbackMsg.textContent = "Correct! Well done!";
+                feedbackMsg.className = "mt-6 text-center text-lg font-medium h-6 text-green-400";
+            } else {
+                feedbackMsg.textContent = "Not quite. Try again!";
+                feedbackMsg.className = "mt-6 text-center text-lg font-medium h-6 text-red-400";
+            }
+        });
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', loadApiKey);
 
     </script>
 </body>

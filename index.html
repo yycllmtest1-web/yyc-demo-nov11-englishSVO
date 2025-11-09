@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentence Structure Scramble</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the game */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Wood texture background, similar to the image */
+            background-color: #f7f3e8;
+            background-image: url('https://www.transparenttextures.com/patterns/wood-grain.png');
+        }
+
+        /* Style for the draggable word cards */
+        .word-card {
+            /* Light green background as in the image */
+            background-color: #c4f5c4;
+            border: 2px solid #5a8c5a;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease-in-out;
+            cursor: grab;
+        }
+
+        .word-card:active {
+            cursor: grabbing;
+            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
+        }
+        
+        /* Add slight random rotation to cards in the scramble box */
+        .scramble-box .word-card:nth-child(5n+1) { transform: rotate(-1.5deg); }
+        .scramble-box .word-card:nth-child(5n+2) { transform: rotate(1deg); }
+        .scramble-box .word-card:nth-child(5n+3) { transform: rotate(2deg); }
+        .scramble-box .word-card:nth-child(5n+4) { transform: rotate(-1deg); }
+
+        /* Style for the drop zones */
+        .drop-zone {
+            border: 3px dashed #a0a0a0;
+            background-color: rgba(255, 255, 255, 0.5);
+            min-height: 80px;
+        }
+        
+        /* Highlight drop zone on drag over */
+        .drag-over {
+            background-color: rgba(196, 245, 196, 0.7);
+            border-color: #5a8c5a;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+        }
+        .modal.flex {
+            display: flex; /* Show when active */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white/80 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Sentence Structure Scramble</h1>
+
+        <!-- Scramble Box: Where the words start -->
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Scrambled Words:</h2>
+            <div id="scramble-box" class="drop-zone p-4 rounded-lg flex flex-wrap gap-3 items-center justify-center">
+                <!-- Word cards will be generated here -->
+                <p class="text-gray-500">Click "Get New Sentence" to start!</p>
+            </div>
+        </div>
+
+        <!-- Answer Box: Where the words are dropped -->
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Your Sentence:</h2>
+            <div id="answer-box" class="drop-zone p-4 rounded-lg flex flex-wrap gap-3 items-center">
+                <!-- Dropped words will appear here -->
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row gap-3">
+            <button id="get-sentence-btn" class="flex-1 bg-blue-600 text-white font-semibold py-3 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-300">
+                Get New Sentence
+            </button>
+            <button id="check-answer-btn" class="flex-1 bg-green-600 text-white font-semibold py-3 px-5 rounded-lg shadow-md hover:bg-green-700 transition duration-300">
+                Check Answer
+            </button>
+        </div>
+
+        <!-- Message Area -->
+        <div id="message-area" class="mt-4 text-center text-lg font-medium"></div>
+
+        <!-- API Key Button -->
+        <div class="text-center mt-6">
+            <button id="api-key-btn" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                Set AI API Key
+            </button>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">Set Your AI API Key</h2>
+            <p class="text-gray-600 mb-4">Please provide your API key for the MiniMax model to generate sentences.</p>
+            <input type="password" id="api-key-input" class="w-full p-2 border border-gray-300 rounded-lg mb-4" placeholder="Enter your MiniMax API key here...">
+            <div class="flex justify-end gap-3">
+                <button id="cancel-key-btn" class="bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-400 transition">
+                    Cancel
+                </button>
+                <button id="save-key-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                    Save Key
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- STATE ---
+        let correctSentence = ""; // e.g., "The cat sat on the mat"
+        let apiKey = "";
+        let draggedElement = null;
+
+        // --- DOM ELEMENTS ---
+        const scrambleBox = document.getElementById('scramble-box');
+        const answerBox = document.getElementById('answer-box');
+        const getSentenceBtn = document.getElementById('get-sentence-btn');
+        const checkAnswerBtn = document.getElementById('check-answer-btn');
+        const messageArea = document.getElementById('message-area');
+        
+        const apiKeyBtn = document.getElementById('api-key-btn');
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const saveKeyBtn = document.getElementById('save-key-btn');
+        const cancelKeyBtn = document.getElementById('cancel-key-btn');
+
+        // --- API KEY MODAL LOGIC ---
+        
+        // Load API key from localStorage on startup
+        function loadApiKey() {
+            // Updated to use 'minimax-api-key'
+            const storedKey = localStorage.getItem('minimax-api-key');
+            if (storedKey) {
+                apiKey = storedKey;
+                apiKeyInput.value = storedKey;
+            } else {
+                // If no key, show the modal
+                apiKeyModal.classList.add('flex');
+            }
+        }
+        
+        apiKeyBtn.addEventListener('click', () => {
+            apiKeyModal.classList.add('flex');
+        });
+
+        cancelKeyBtn.addEventListener('click', () => {
+            apiKeyModal.classList.remove('flex');
+        });
+
+        saveKeyBtn.addEventListener('click', () => {
+            apiKey = apiKeyInput.value;
+            if (apiKey) {
+                // Updated to use 'minimax-api-key'
+                localStorage.setItem('minimax-api-key', apiKey);
+                apiKeyModal.classList.remove('flex');
+                showMessage('API Key saved successfully!', 'green');
+            } else {
+                showMessage('Please enter a valid API key.', 'red');
+            }
+        });
+
+        // --- MINIMAX API CALL ---
+        async function generateSentence() {
+            if (!apiKey) {
+                showMessage('Please set your MiniMax API key first.', 'red');
+                apiKeyModal.classList.add('flex');
+                return;
+            }
+
+            showMessage('Generating new sentence... 🧠', 'blue');
+            getSentenceBtn.disabled = true;
+
+            const systemPrompt = "You are an assistant that provides simple sentences for a game. You MUST respond with ONLY the sentence and nothing else. Do not add quotes, labels, explanations, or any other text. Just the sentence.";
+            const userQuery = "Generate only one simple, grammatically correct English sentence with a clear SVO (Subject-Verb-Object) structure. The sentence should be between 5 and 8 words long. End it with a period.";
+            
+            // Updated for MiniMax API
+            const apiUrl = `https://api.minimax.io/v1/chat/completions`;
+
+            const payload = {
+                model: "MiniMax-M2",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userQuery }
+                ],
+                extra_body: { reasoning_split: true } // We DO need the reasoning part split out
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}` // Use Bearer token for MiniMax
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                // Updated to parse the MiniMax response structure
+                let text = result.choices?.[0]?.message?.content;
+
+                if (text) {
+                    // NEW FIX: Manually remove the <think>...</think> block
+                    const thinkTagEnd = text.lastIndexOf('</think>');
+                    if (thinkTagEnd !== -1) {
+                        // If the tag exists, take the text after it
+                        text = text.substring(thinkTagEnd + '</think>'.length);
+                    }
+
+                    // Clean the sentence: remove period and trim whitespace
+                    correctSentence = text.trim().replace(/\.$/, '');
+
+                    // Add a check to ensure we have a valid sentence
+                    if (correctSentence.length < 5 || correctSentence.includes('<')) {
+                         throw new Error('Failed to parse a clean sentence from API response.');
+                    }
+                    
+                    setupGame(correctSentence);
+                } else {
+                    throw new Error('Invalid response from API.');
+                }
+
+            } catch (error) {
+                console.error(error);
+                showMessage('Failed to generate sentence. Check your API key or console.', 'red');
+                // Handle common API key error
+                if (error.message.includes('API Error')) {
+                     showMessage('Error: Please check your MiniMax API key and ensure it is correct.', 'red');
+                }
+            } finally {
+                getSentenceBtn.disabled = false;
+            }
+        }
+
+        // --- GAME LOGIC (No changes needed here) ---
+
+        function setupGame(sentence) {
+            const words = sentence.split(' ');
+            const scrambledWords = shuffleArray([...words]);
+
+            scrambleBox.innerHTML = '';
+            answerBox.innerHTML = '';
+            messageArea.innerHTML = '';
+
+            scrambledWords.forEach(word => {
+                scrambleBox.appendChild(createWordCard(word));
+            });
+        }
+
+        function createWordCard(word) {
+            const card = document.createElement('div');
+            card.className = 'word-card p-3 rounded-lg text-xl font-medium select-none';
+            card.textContent = word;
+            card.draggable = true;
+            
+            // Add drag event listeners
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+            
+            return card;
+        }
+
+        // Fisher-Yates Shuffle Algorithm
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            // Ensure it's not the correct order
+            if (array.join(' ') === correctSentence) {
+                return shuffleArray(array); // Reshuffle
+            }
+            return array;
+        }
+
+        function checkAnswer() {
+            const wordsInAnswerBox = Array.from(answerBox.children).map(card => card.textContent);
+            const userAnswer = wordsInAnswerBox.join(' ');
+
+            if (userAnswer === correctSentence) {
+                showMessage('🎉 Correct! Well done! 🎉', 'green');
+            } else {
+                showMessage('Almost! Try rearranging the words again.', 'red');
+            }
+        }
+
+        function showMessage(text, color) {
+            messageArea.textContent = text;
+            messageArea.className = `mt-4 text-center text-lg font-medium text-${color}-600`;
+        }
+
+
+        // --- DRAG & DROP HANDLERS (No changes needed here) ---
+        
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            // Add a slight delay to allow the browser to render the drag image
+            setTimeout(() => {
+                e.target.style.opacity = '0.5';
+            }, 0);
+        }
+
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            draggedElement = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault(); // Necessary to allow dropping
+            const dropZone = e.currentTarget;
+            dropZone.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            const dropZone = e.currentTarget;
+            dropZone.classList.remove('drag-over');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropZone = e.currentTarget;
+            dropZone.classList.remove('drag-over');
+
+            if (draggedElement && dropZone !== draggedElement.parentNode) {
+                // This handles moving between scrambleBox and answerBox
+                // Find the correct position to insert
+                const afterElement = getDragAfterElement(dropZone, e.clientX);
+                if (afterElement == null) {
+                    dropZone.appendChild(draggedElement);
+                } else {
+                    dropZone.insertBefore(draggedElement, afterElement);
+                }
+            } else if (draggedElement) {
+                // This logic handles reordering within the same box
+                const afterElement = getDragAfterElement(dropZone, e.clientX);
+                if (afterElement == null) {
+                    dropZone.appendChild(draggedElement);
+                } else {
+                    dropZone.insertBefore(draggedElement, afterElement);
+                }
+            }
+        }
+        
+        // Helper function to find where to insert the dragged element for reordering
+        // Updated to use clientX for horizontal layout
+        function getDragAfterElement(container, x) {
+            const draggableElements = [...container.querySelectorAll('.word-card:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = x - box.left - box.width / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+
+        // --- EVENT LISTENERS ---
+        getSentenceBtn.addEventListener('click', generateSentence);
+        checkAnswerBtn.addEventListener('click', checkAnswer);
+        
+        // Add drag-over listeners to both boxes
+        [scrambleBox, answerBox].forEach(box => {
+            box.addEventListener('dragover', handleDragOver);
+            box.addEventListener('dragleave', handleDragLeave);
+            box.addEventListener('drop', handleDrop);
+        });
+
+        // --- INITIALIZATION ---
+        loadApiKey();
+
+    </script>
+</body>
+</html>
